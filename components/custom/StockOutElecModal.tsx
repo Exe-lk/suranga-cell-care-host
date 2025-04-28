@@ -205,6 +205,7 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 
 			return errors;
 		},
+		
 		onSubmit: async (values) => {
 			try {
 				Swal.fire({
