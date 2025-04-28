@@ -25,6 +25,7 @@ import { default as BootstrapSelect } from '../bootstrap/forms/Select';
 import Option, { Options } from '../bootstrap/Option';
 import { arrayUnion, collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { firestore } from '../../firebaseConfig';
+import { useGetDealersQuery } from '../../redux/slices/delearApiSlice';
 
 interface StockAddModalProps {
 	id: string;
@@ -68,9 +69,10 @@ interface StockOut {
 }
 
 const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity }) => {
-	const [selectedOption, setSelectedOption] = useState<'Technician' | 'Return' | 'Branch' | ''>(
-		'',
-	);
+	const [selectedOption, setSelectedOption] = useState<
+		'Technician' | 'Return' | 'Branch' | '' | 'Dealer'
+	>('');
+	const [selectedOption1, setSelectedOption1] = useState<'10' | '20' | ''>('');
 	const [stockOut, setStockOut] = useState<StockOut>({
 		cid: '',
 		model: '',
@@ -96,6 +98,8 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 		isLoading: techniciansLoading,
 		isError: techniciansError,
 	} = useGetTechniciansQuery(undefined);
+	const { data: dealers, error, isLoading } = useGetDealersQuery(undefined);
+
 	const { data: stockInData } = useGetStockInOutsQuery(undefined);
 	// const { data: substockInData } = useGetSubStockInOutsQuery(undefined);
 	const [substockInData, setSubstockInData] = useState<any>([]);
@@ -168,6 +172,8 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 			substockInData: '',
 			sellectedItem: '',
 			billNumber: '',
+			dealer: '',
+			rate: '',
 		},
 		enableReinitialize: true,
 		validate: (values) => {
@@ -211,6 +217,7 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 				await refetch();
 				values.quantity = selecteditems.length;
 				values.sellectedItem = selecteditems;
+				values.rate = selectedOption1;
 				const stockOutQuantity = values.quantity ? parseInt(values.quantity) : 0;
 				if (isNaN(stockInQuantity) || isNaN(stockOutQuantity)) {
 					Swal.fire({
@@ -240,29 +247,28 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 					};
 
 					await updateSubStockInOut({ id, subid, values }).unwrap();
-				
 				});
 
-				if(values.billNumber!=""){
+				if (values.billNumber != '') {
 					const data = {
 						stock: {
-						  item: selecteditems,
-						  stockid: id,
-						  category: values.category,
-						  model: values.model,
-						  brand: values.brand,
-						  quantity:values.quantity
-						}
-					  };
-					  
-					  const billRef = doc(firestore, 'bill', values.billNumber);
-					  
-					  // Use arrayUnion to add the new stock object to the 'stock' array in Firestore
-					  await updateDoc(billRef, {
-						stock: arrayUnion(data.stock)
-					  });
+							item: selecteditems,
+							stockid: id,
+							category: values.category,
+							model: values.model,
+							brand: values.brand,
+							quantity: values.quantity,
+						},
+					};
+
+					const billRef = doc(firestore, 'bill', values.billNumber);
+
+					// Use arrayUnion to add the new stock object to the 'stock' array in Firestore
+					await updateDoc(billRef, {
+						stock: arrayUnion(data.stock),
+					});
 				}
-				
+
 				refetch();
 				await Swal.fire({ icon: 'success', title: 'Stock Out Created Successfully' });
 				// formik.resetForm();
@@ -280,9 +286,11 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 	});
 
 	const handleOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setSelectedOption(e.target.value as 'Technician' | 'Return' | 'Branch');
+		setSelectedOption(e.target.value as 'Technician' | 'Return' | 'Branch' | 'Dealer');
 	};
-
+	const handleOptionChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSelectedOption1(e.target.value as '10' | '20');
+	};
 	const formatMobileNumber = (value: string) => {
 		let sanitized = value.replace(/\D/g, '');
 		if (!sanitized.startsWith('0')) sanitized = '0' + sanitized;
@@ -428,9 +436,55 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 								onChange={handleOptionChange}
 								checked={selectedOption}
 							/>
+							<Checks
+								type='radio'
+								id='dealer'
+								label='Dealer'
+								name='stockOutType'
+								value='Dealer'
+								onChange={handleOptionChange}
+								checked={selectedOption}
+							/>
 						</ChecksGroup>
 					</FormGroup>
+					{selectedOption === 'Dealer' && (
+						<>
+							<FormGroup id='dealer' label='Dealer Name' className='col-md-6'>
+								<Input
+									type='text'
+									placeholder='Enter name'
+									value={formik.values.dealer}
+									onChange={formik.handleChange}
+									onBlur={formik.handleBlur}
+									name='dealer'
+									isValid={!!formik.errors.dealer && formik.touched.dealer}
+								/>
+							</FormGroup>
 
+							<FormGroup id='StockOutSelect' className='col-md-12'>
+								<ChecksGroup isInline>
+									<Checks
+										type='radio'
+										id='10'
+										label='10%'
+										name='10'
+										value='10'
+										onChange={handleOptionChange1}
+										checked={selectedOption1}
+									/>
+									<Checks
+										type='radio'
+										id='20'
+										label='20%'
+										name='20'
+										value='20'
+										onChange={handleOptionChange1}
+										checked={selectedOption1}
+									/>
+								</ChecksGroup>
+							</FormGroup>
+						</>
+					)}
 					{selectedOption === 'Technician' && (
 						<>
 							{' '}
