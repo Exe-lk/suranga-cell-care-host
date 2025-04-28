@@ -152,7 +152,7 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 		setSelecteditems([]);
 		setSelectedCost(null);
 	};
-
+console.log(quantity)
 	const formik = useFormik({
 		initialValues: {
 			brand: stockOut.brand,
