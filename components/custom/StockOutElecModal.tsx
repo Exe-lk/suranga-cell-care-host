@@ -111,6 +111,7 @@ const StockAddModal: FC<StockAddModalProps> = ({ id, isOpen, setIsOpen, quantity
 	const animatedComponents = makeAnimated();
 	const [StockInOuts, setStockInOuts] = useState<string[]>([]);
 
+	
 	const getsubstock = async () => {
 		const q = query(
 			collection(firestore, 'Stock'),
